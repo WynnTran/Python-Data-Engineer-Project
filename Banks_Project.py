@@ -3,7 +3,10 @@ url = 'https://web.archive.org/web/20230908091635/https://en.wikipedia.org/wiki/
 table_attribs = ['Name','MC_USD_Billion']
 db_name = 'Banks.db'
 table_name = 'Largest_banks'
-csv_path = './Largest_banks_data.csv'
+output_path = './Largest_banks_data.csv'
+csv_path = './exchange_rate.csv'
+
+
 
 
 # Importing the required libraries
@@ -23,15 +26,6 @@ def log_progress(message):
     timestamp = now.strftime(timestamp_format)
     with open (code_log,'a') as f:
         f.write(timestamp + ':' + message + '\n')
-
-log_progress('Preliminaries complete. Initiating ETL process')
-log_progress('Data extraction complete. Initiating Transformation process')
-log_progress('Data transformation complete. Initiating Loading process')
-log_progress('Data saved to CSV file')
-log_progress('SQL Connection initiated')
-log_progress('Data loaded to Database as a table. Executing queries')
-log_progress('Process complete')
-log_progress('Server connection closed')
 
 
 def extract(url, table_attribs):
@@ -58,7 +52,12 @@ def transform(df, csv_path):
     information, and adds three columns to the data frame, each
     containing the transformed version of Market Cap column to
     respective currencies'''
-
+    
+    exchange_rate = pd.read_csv(csv_path)
+    dict = exchange_rate.set_index('Currency').T.to_dict('Rate')
+    df['MC_EUR_Billion'] = [np.round(x*exchange_rate['EUR'],2) for x in df['MC_USD_Billion']]
+    df['MC_GBP_Billion'] = [np.round(x*exchange_rate['GBP'],2) for x in df['MC_USD_Billion']]
+    df['MC_INR_Billion'] = [np.round(x*exchange_rate['INR'],2) for x in df['MC_USD_Billion']]
     return df
 
 def load_to_csv(df, output_path):
@@ -76,3 +75,14 @@ def run_query(query_statement, sql_connection):
 ''' Here, you define the required entities and call the relevant
 functions in the correct order to complete the project. Note that this
 portion is not inside any function.'''
+
+log_progress('Preliminaries complete. Initiating ETL process')
+df = extract(url, table_attribs)
+log_progress('Data extraction complete. Initiating Transformation process')
+df = transform(df, csv_path)
+log_progress('Data transformation complete. Initiating Loading process')
+log_progress('Data saved to CSV file')
+log_progress('SQL Connection initiated')
+log_progress('Data loaded to Database as a table. Executing queries')
+log_progress('Process complete')
+log_progress('Server connection closed')
