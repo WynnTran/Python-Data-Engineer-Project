@@ -30,10 +30,11 @@ def extract(url, table_attribs):
     tables = data.find_all('tbody')
     rows = tables[0].find_all('tr')
     for row in rows:
-        col = row.find_all('td')
-        if len(col) != 0:
-            data_dict = {'Name':col[1].contents[0],
-                        'MC_USD_Billion':col[2].contents[0]}
+        if row.find('td') is not None:
+            col = row.find_all('td')
+            bank_name = col[1].find_all('a')[1]['title']
+            market_cap = float(col[2].contents[0][:-1])
+            data_dict = {'Name':bank_name, 'MC_USD_Billion':market_cap}
             df1 = pd.DataFrame(data_dict, index=[0])
             df = pd.concat([df, df1], ignore_index=True)            
     return df
@@ -104,5 +105,6 @@ query_statement = f'SELECT Name from Largest_banks LIMIT 5'
 run_query(query_statement, sql_connection)
 
 log_progress('Process complete')
+
 sql_connection.close()
 log_progress('Server connection closed')
