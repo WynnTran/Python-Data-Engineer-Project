@@ -9,6 +9,13 @@ import sqlite3
 import numpy as np
 from datetime import datetime
 
+
+url = 'https://web.archive.org/web/20230908091635/https://en.wikipedia.org/wiki/List_of_largest_banks'
+table_attribs = ['Name','MC_USD_Billion']
+db_name = 'Banks.db'
+table_name = 'Largest_banks'
+csv_path = './Largest_banks_data.csv'
+
 def log_progress(message):
     ''' This function logs the mentioned message of a given stage of the
     code execution to a log file. Function returns nothing'''
@@ -40,20 +47,21 @@ def extract(url, table_attribs):
     return df
     
 
-def transform(df):
+def transform(df,csv_path):
     ''' This function accesses the CSV file for exchange rate
     information, and adds three columns to the data frame, each
     containing the transformed version of Market Cap column to
     respective currencies'''
     
-    exchange_rate = pd.read_csv('exchange_rate.csv')
-    dict = exchange_rate.set_index('Currency').to_dict()['Rate']
-    df['MC_EUR_Billion'] = [np.round(x*exchange_rate['EUR'],2) for x in df['MC_USD_Billion']]
-    df['MC_GBP_Billion'] = [np.round(x*exchange_rate['GBP'],2) for x in df['MC_USD_Billion']]
-    df['MC_INR_Billion'] = [np.round(x*exchange_rate['INR'],2) for x in df['MC_USD_Billion']]
+    #xchange_rate = pd.read_csv('exchange_rate.csv')
+    exchange_rate = pd.read_csv(csv_path)
+    exchange_rate = exchange_rate.set_index('Currency').to_dict()['Rate']
+    df['MC_GBP_Billion']= [np.round(x*exchange_rate['GBP'],2) for x in df['MC_USD_Billion']]
+    df['MC_EUR_Billion']= [np.round(x*exchange_rate['EUR'],2) for x in df['MC_USD_Billion']]
+    df['MC_INR_Billion']= [np.round(x*exchange_rate['INR'],2) for x in df['MC_USD_Billion']]
     return df
 
-def load_to_csv(df, csv_path):
+def load_to_csv(df, output_path):
     ''' This function saves the final data frame as a CSV file in
     the provided path. Function returns nothing.'''
     df.to_csv(csv_path)
@@ -74,18 +82,14 @@ def run_query(query_statement, sql_connection):
 functions in the correct order to complete the project. Note that this
 portion is not inside any function.'''
 
-url = 'https://web.archive.org/web/20230908091635/https://en.wikipedia.org/wiki/List_of_largest_banks'
-table_attribs = ['Name','MC_USD_Billion']
-db_name = 'Banks.db'
-table_name = 'Largest_banks'
-csv_path = './Largest_banks_data.csv'
+
 
 log_progress('Preliminaries complete. Initiating ETL process')
 
 df = extract(url, table_attribs)
 log_progress('Data extraction complete. Initiating Transformation process')
 
-df = transform(df)
+df = transform(df,'exchange_rate.csv')
 log_progress('Data transformation complete. Initiating Loading process')
 
 load_to_csv(df,csv_path)
